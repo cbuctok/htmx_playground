@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ prefs.theme if prefs else 'light' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ config.app_name if config else 'SQLite Admin' }}{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/css/theme.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                {% if config and config.logo_path %}
+                <img src="{{ config.logo_path }}" alt="Logo" class="app-logo">
+                {% endif %}
+                <h1 class="app-title">{{ config.app_name if config else 'SQLite Admin' }}</h1>
+                {% if db_name %}
+                <span class="db-badge">{{ db_name }}</span>
+                {% endif %}
+            </div>
+            <nav class="header-nav">
+                <a href="/dashboards/default" class="nav-link">Dashboard</a>
+                <a href="/tables" class="nav-link">Tables</a>
+                <a href="/dashboards" class="nav-link">Saved Dashboards</a>
+                {% if user and user.is_admin %}
+                <a href="/admin" class="nav-link">Admin</a>
+                {% endif %}
+                <a href="/logout" class="nav-link">Logout ({{ user.username if user else 'Guest' }})</a>
+            </nav>
+        </header>
+
+        <!-- Banner for multiple databases -->
+        {% if multiple_dbs %}
+        <div class="alert alert-warning">
+            Multiple databases detected. Loaded latest modified: <strong>{{ db_name }}</strong>
+        </div>
+        {% endif %}
+
+        <!-- Main Content -->
+        <main class="app-main">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>SQLite Admin &mdash; Demo Only (Insecure by Design)</p>
+            {% if db_name %}
+            <p>Active Database: {{ db_name }}</p>
+            {% endif %}
+        </footer>
+    </div>
+
+    <!-- HTMX loading indicator -->
+    <div id="loading-indicator" class="htmx-indicator">
+        <div class="spinner"></div>
+    </div>
+</body>
+</html>

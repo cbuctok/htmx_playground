@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}{% if mode == 'create' %}New Row{% else %}Edit Row{% endif %} - {{ table_name }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="/tables/{{ table_name }}" class="btn btn-link">&larr; Back to {{ table_name }}</a>
+    <h2>{% if mode == 'create' %}Create New Row{% else %}Edit Row{% endif %}</h2>
+</div>
+
+<div class="form-container">
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form
+        method="post"
+        action="/tables/{{ table_name }}/{% if mode == 'create' %}new{% else %}{{ pk_value }}/edit{% endif %}"
+        hx-post="/tables/{{ table_name }}/{% if mode == 'create' %}new{% else %}{{ pk_value }}/edit{% endif %}"
+        class="crud-form"
+    >
+        {% for field in fields %}
+        <div class="form-group">
+            <label for="{{ field.name }}">
+                {{ field.name }}
+                {% if field.required %}<span class="required">*</span>{% endif %}
+                {% if field.semantic_type %}
+                <span class="field-hint">({{ field.semantic_type }})</span>
+                {% endif %}
+            </label>
+
+            {% if field.type == 'textarea' %}
+            <textarea
+                id="{{ field.name }}"
+                name="{{ field.name }}"
+                rows="4"
+                {% if field.required %}required{% endif %}
+            >{{ row[field.name] if row and row[field.name] else '' }}</textarea>
+
+            {% elif field.type == 'checkbox' %}
+            <input
+                type="checkbox"
+                id="{{ field.name }}"
+                name="{{ field.name }}"
+                value="1"
+                {% if row and row[field.name] %}checked{% endif %}
+            >
+
+            {% elif field.type == 'number' %}
+            <input
+                type="number"
+                id="{{ field.name }}"
+                name="{{ field.name }}"
+                value="{{ row[field.name] if row and row[field.name] is not none else '' }}"
+                step="any"
+                {% if field.required %}required{% endif %}
+            >
+
+            {% elif field.type == 'datetime-local' %}
+            <input
+                type="datetime-local"
+                id="{{ field.name }}"
+                name="{{ field.name }}"
+                value="{{ row[field.name]|replace(' ', 'T') if row and row[field.name] else '' }}"
+                {% if field.required %}required{% endif %}
+            >
+
+            {% elif field.type == 'date' %}
+            <input
+                type="date"
+                id="{{ field.name }}"
+                name="{{ field.name }}"
+                value="{{ row[field.name] if row and row[field.name] else '' }}"
+                {% if field.required %}required{% endif %}
+            >
+
+            {% else %}
+            <input
+                type="{{ field.type }}"
+                id="{{ field.name }}"
+                name="{{ field.name }}"
+                value="{{ row[field.name] if row and row[field.name] is not none else '' }}"
+                {% if field.required %}required{% endif %}
+            >
+            {% endif %}
+
+            <span class="field-type">{{ field.sql_type }}</span>
+        </div>
+        {% endfor %}
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if mode == 'create' %}Create{% else %}Update{% endif %}
+            </button>
+            <a href="/tables/{{ table_name }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

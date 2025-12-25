@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ table_name }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <a href="/tables" class="btn btn-link">&larr; Back to Tables</a>
+        <h2>{{ table_name }}</h2>
+        <span class="badge">{{ total_count }} rows</span>
+    </div>
+    <div class="page-header-right">
+        <a href="/tables/{{ table_name }}/new" class="btn btn-primary">+ New Row</a>
+        <a href="/tables/{{ table_name }}/schema" class="btn btn-secondary">View Schema</a>
+    </div>
+</div>
+
+<!-- Search and filters -->
+<div class="table-controls">
+    <form
+        class="search-form"
+        hx-get="/tables/{{ table_name }}"
+        hx-target="#table-container"
+        hx-push-url="true"
+    >
+        <input
+            type="text"
+            name="search"
+            placeholder="Search..."
+            value="{{ search }}"
+            class="search-input"
+        >
+        <button type="submit" class="btn btn-secondary">Search</button>
+        {% if search %}
+        <a href="/tables/{{ table_name }}" class="btn btn-link">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Table container -->
+<div id="table-container">
+    {% include "partials/table_rows.html" %}
+</div>
+{% endblock %}

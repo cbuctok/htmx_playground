@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Saved Dashboards - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Saved Dashboards & Views</h2>
+    <div class="page-header-right">
+        <a href="/dashboards/new" class="btn btn-primary">+ New Dashboard</a>
+    </div>
+</div>
+
+<section class="dashboard-section">
+    <h3>Dashboards</h3>
+    <div class="dashboard-list">
+        {% for dashboard in dashboards %}
+        <div class="dashboard-list-item" id="dashboard-{{ dashboard.id }}">
+            <div class="dashboard-list-info">
+                <h4><a href="/dashboards/{{ dashboard.id }}">{{ dashboard.name }}</a></h4>
+                <span class="badge">{{ dashboard.config.widgets|length }} widgets</span>
+            </div>
+            <div class="dashboard-list-actions">
+                <a href="/dashboards/{{ dashboard.id }}" class="btn btn-sm btn-primary">View</a>
+                <a href="/dashboards/{{ dashboard.id }}/edit" class="btn btn-sm btn-secondary">Edit</a>
+                <button
+                    class="btn btn-sm btn-danger"
+                    hx-delete="/dashboards/{{ dashboard.id }}"
+                    hx-target="#dashboard-{{ dashboard.id }}"
+                    hx-swap="outerHTML"
+                    hx-confirm="Are you sure you want to delete this dashboard?"
+                >Delete</button>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No saved dashboards. <a href="/dashboards/new">Create one</a></p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="dashboard-section">
+    <h3>Saved Views</h3>
+    <div class="page-header-right">
+        <a href="/dashboards/views/new" class="btn btn-secondary btn-sm">+ New View</a>
+    </div>
+    <div class="dashboard-list">
+        {% for view in views %}
+        <div class="dashboard-list-item" id="view-{{ view.id }}">
+            <div class="dashboard-list-info">
+                <h4>{{ view.name }}</h4>
+                {% if view.source_table %}
+                <span class="badge">From: {{ view.source_table }}</span>
+                {% endif %}
+                <code class="view-sql">{{ view.sql[:100] }}{% if view.sql|length > 100 %}...{% endif %}</code>
+            </div>
+            <div class="dashboard-list-actions">
+                <button
+                    class="btn btn-sm btn-danger"
+                    hx-delete="/dashboards/views/{{ view.id }}"
+                    hx-target="#view-{{ view.id }}"
+                    hx-swap="outerHTML"
+                    hx-confirm="Are you sure you want to delete this view?"
+                >Delete</button>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No saved views. <a href="/dashboards/views/new">Create one</a></p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

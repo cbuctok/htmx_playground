@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{{ dashboard.name }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <a href="/dashboards" class="btn btn-link">&larr; Back to Dashboards</a>
+        <h2>{{ dashboard.name }}</h2>
+    </div>
+    <div class="page-header-right">
+        <a href="/dashboards/{{ dashboard.id }}/edit" class="btn btn-secondary">Edit Dashboard</a>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    {% for widget in widgets %}
+    <div class="dashboard-card {% if widget.error %}error{% endif %}">
+        {% if widget.type == 'table_summary' %}
+        <div class="dashboard-card-header">
+            <h3>{{ widget.table }}</h3>
+        </div>
+        {% if widget.error %}
+        <div class="dashboard-card-body">
+            <div class="alert alert-error">{{ widget.error }}</div>
+        </div>
+        {% else %}
+        <div class="dashboard-card-body">
+            <div class="dashboard-stats">
+                <div class="stat">
+                    <span class="stat-value">{{ widget.row_count }}</span>
+                    <span class="stat-label">Rows</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">{{ widget.column_count }}</span>
+                    <span class="stat-label">Columns</span>
+                </div>
+            </div>
+            <div class="column-preview">
+                <strong>Columns:</strong>
+                {{ widget.columns|join(', ') }}{% if widget.column_count > 5 %}, ...{% endif %}
+            </div>
+        </div>
+        <div class="dashboard-card-footer">
+            <a href="/tables/{{ widget.table }}" class="btn btn-primary btn-sm">View Data</a>
+            <a href="/tables/{{ widget.table }}/new" class="btn btn-secondary btn-sm">+ Add Row</a>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No widgets configured. <a href="/dashboards/{{ dashboard.id }}/edit">Edit this dashboard</a></p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

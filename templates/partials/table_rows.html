@@ -1,0 +1,86 @@
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                {% for column in columns %}
+                <th>
+                    <a
+                        href="/tables/{{ table_name }}?sort={{ column.name }}&order={{ 'desc' if sort == column.name and order == 'asc' else 'asc' }}{% if search %}&search={{ search }}{% endif %}"
+                        hx-get="/tables/{{ table_name }}?sort={{ column.name }}&order={{ 'desc' if sort == column.name and order == 'asc' else 'asc' }}{% if search %}&search={{ search }}{% endif %}"
+                        hx-target="#table-container"
+                        hx-push-url="true"
+                        class="sort-link {% if sort == column.name %}active {{ order }}{% endif %}"
+                    >
+                        {{ column.name }}
+                        {% if sort == column.name %}
+                        <span class="sort-indicator">{{ '&#9650;' if order == 'asc' else '&#9660;' }}</span>
+                        {% endif %}
+                    </a>
+                </th>
+                {% endfor %}
+                <th class="actions-column">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr id="row-{{ row[pk_column] }}">
+                {% for column in columns %}
+                <td>
+                    {% set value = row[column.name] %}
+                    {% if value is none %}
+                    <span class="null-value">NULL</span>
+                    {% elif value|length > 100 %}
+                    {{ value[:100] }}...
+                    {% else %}
+                    {{ value }}
+                    {% endif %}
+                </td>
+                {% endfor %}
+                <td class="actions-column">
+                    <a href="/tables/{{ table_name }}/{{ row[pk_column] }}/edit" class="btn btn-sm btn-secondary">Edit</a>
+                    <button
+                        class="btn btn-sm btn-danger"
+                        hx-delete="/tables/{{ table_name }}/{{ row[pk_column] }}"
+                        hx-target="#row-{{ row[pk_column] }}"
+                        hx-swap="outerHTML"
+                        hx-confirm="Are you sure you want to delete this row?"
+                    >Delete</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{{ columns|length + 1 }}" class="empty-table">
+                    No data found.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a
+        href="/tables/{{ table_name }}?page={{ page - 1 }}{% if sort %}&sort={{ sort }}&order={{ order }}{% endif %}{% if search %}&search={{ search }}{% endif %}"
+        hx-get="/tables/{{ table_name }}?page={{ page - 1 }}{% if sort %}&sort={{ sort }}&order={{ order }}{% endif %}{% if search %}&search={{ search }}{% endif %}"
+        hx-target="#table-container"
+        hx-push-url="true"
+        class="btn btn-secondary"
+    >&larr; Previous</a>
+    {% endif %}
+
+    <span class="pagination-info">Page {{ page }} of {{ total_pages }}</span>
+
+    {% if page < total_pages %}
+    <a
+        href="/tables/{{ table_name }}?page={{ page + 1 }}{% if sort %}&sort={{ sort }}&order={{ order }}{% endif %}{% if search %}&search={{ search }}{% endif %}"
+        hx-get="/tables/{{ table_name }}?page={{ page + 1 }}{% if sort %}&sort={{ sort }}&order={{ order }}{% endif %}{% if search %}&search={{ search }}{% endif %}"
+        hx-target="#table-container"
+        hx-push-url="true"
+        class="btn btn-secondary"
+    >Next &rarr;</a>
+    {% endif %}
+</div>
+{% endif %}

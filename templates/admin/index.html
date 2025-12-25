@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Admin Panel</h2>
+</div>
+
+<div class="admin-grid">
+    <section class="admin-section">
+        <h3>Quick Links</h3>
+        <div class="admin-links">
+            <a href="/admin/users" class="btn btn-secondary">Manage Users</a>
+            <a href="/admin/branding" class="btn btn-secondary">Branding & Theme</a>
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <h3>Current Database</h3>
+        <div class="current-db-info">
+            <p><strong>Active:</strong> {{ current_db }}</p>
+        </div>
+
+        {% if available_dbs|length > 1 %}
+        <form
+            method="post"
+            action="/admin/switch-database"
+            hx-post="/admin/switch-database"
+            class="db-switch-form"
+        >
+            <div class="form-group">
+                <label for="database">Switch Database</label>
+                <select id="database" name="database">
+                    {% for db in available_dbs %}
+                    <option value="{{ db }}" {% if db == current_db %}selected{% endif %}>{{ db }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-warning">Switch Database</button>
+            <span class="field-hint">Warning: This will reset dashboards and cached metadata!</span>
+        </form>
+        {% endif %}
+    </section>
+
+    <section class="admin-section">
+        <h3>Reset & Maintenance</h3>
+        <div id="admin-messages"></div>
+        <div class="admin-actions">
+            <form
+                method="post"
+                action="/admin/reload-schema"
+                hx-post="/admin/reload-schema"
+                hx-target="#admin-messages"
+                hx-swap="innerHTML"
+                style="display: inline;"
+            >
+                <button type="submit" class="btn btn-secondary">Reload Schema</button>
+            </form>
+            <span class="action-desc">Re-introspect tables and detect column semantics</span>
+        </div>
+
+        <div class="admin-actions">
+            <form
+                method="post"
+                action="/admin/reset-dashboards"
+                hx-post="/admin/reset-dashboards"
+                hx-target="#admin-messages"
+                hx-swap="innerHTML"
+                hx-confirm="This will delete all saved dashboards and views. Continue?"
+                style="display: inline;"
+            >
+                <button type="submit" class="btn btn-warning">Reset Dashboards</button>
+            </form>
+            <span class="action-desc">Delete all dashboards/views and recreate default</span>
+        </div>
+
+        <div class="admin-actions">
+            <form
+                method="post"
+                action="/admin/clear-cache"
+                hx-post="/admin/clear-cache"
+                hx-target="#admin-messages"
+                hx-swap="innerHTML"
+                style="display: inline;"
+            >
+                <button type="submit" class="btn btn-danger">Clear Metadata Cache</button>
+            </form>
+            <span class="action-desc">Clear all cached table metadata and semantics</span>
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <h3>About</h3>
+        <div class="about-info">
+            <p><strong>SQLite Admin & Dashboard System</strong></p>
+            <p class="text-warning">Demo Only - Explicitly Insecure by Design</p>
+            <ul>
+                <li>Plaintext passwords (no hashing)</li>
+                <li>Cookie-based session (minimal security)</li>
+                <li>No advanced authentication</li>
+                <li>No isolation guarantees</li>
+            </ul>
+            <p><strong>DO NOT USE IN PRODUCTION!</strong></p>
+        </div>
+    </section>
+</div>
+{% endblock %}

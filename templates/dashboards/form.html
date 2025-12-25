@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}{% if mode == 'create' %}New Dashboard{% else %}Edit Dashboard{% endif %} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="/dashboards" class="btn btn-link">&larr; Back to Dashboards</a>
+    <h2>{% if mode == 'create' %}Create New Dashboard{% else %}Edit Dashboard{% endif %}</h2>
+</div>
+
+<div class="form-container">
+    <form
+        method="post"
+        action="/dashboards/{% if mode == 'create' %}new{% else %}{{ dashboard.id }}/edit{% endif %}"
+        hx-post="/dashboards/{% if mode == 'create' %}new{% else %}{{ dashboard.id }}/edit{% endif %}"
+        class="crud-form"
+    >
+        <div class="form-group">
+            <label for="name">Dashboard Name <span class="required">*</span></label>
+            <input
+                type="text"
+                id="name"
+                name="name"
+                value="{{ dashboard.name if dashboard else '' }}"
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label>Select Tables to Include</label>
+            <div class="checkbox-group">
+                {% for table in tables %}
+                <label class="checkbox-label">
+                    <input
+                        type="checkbox"
+                        name="tables"
+                        value="{{ table }}"
+                        {% if mode == 'edit' and table in selected_tables %}checked{% endif %}
+                        {% if mode == 'create' %}checked{% endif %}
+                    >
+                    {{ table }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if mode == 'create' %}Create Dashboard{% else %}Update Dashboard{% endif %}
+            </button>
+            <a href="/dashboards" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

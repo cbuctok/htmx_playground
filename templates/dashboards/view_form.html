@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}New Saved View - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="/dashboards" class="btn btn-link">&larr; Back to Dashboards</a>
+    <h2>Create New Saved View</h2>
+</div>
+
+<div class="form-container">
+    <form
+        method="post"
+        action="/dashboards/views/new"
+        hx-post="/dashboards/views/new"
+        class="crud-form"
+    >
+        <div class="form-group">
+            <label for="name">View Name <span class="required">*</span></label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="source_table">Source Table (optional)</label>
+            <select id="source_table" name="source_table">
+                <option value="">-- No specific table --</option>
+                {% for table in tables %}
+                <option value="{{ table }}">{{ table }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="sql">SQL Query <span class="required">*</span></label>
+            <textarea
+                id="sql"
+                name="sql"
+                rows="6"
+                required
+                placeholder="SELECT * FROM table_name WHERE ..."
+            ></textarea>
+            <span class="field-hint">Enter a valid SQL SELECT statement</span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create View</button>
+            <a href="/dashboards" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

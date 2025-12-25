@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Schema - {{ table_name }} - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <a href="/tables/{{ table_name }}" class="btn btn-link">&larr; Back to {{ table_name }}</a>
+        <h2>Schema: {{ table_name }}</h2>
+    </div>
+</div>
+
+<div class="schema-container">
+    <section class="schema-section">
+        <h3>Columns</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Not Null</th>
+                    <th>Default</th>
+                    <th>Primary Key</th>
+                    <th>Semantic Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for column in columns %}
+                <tr>
+                    <td>{{ column.cid }}</td>
+                    <td><strong>{{ column.name }}</strong></td>
+                    <td><code>{{ column.type or 'TEXT' }}</code></td>
+                    <td>{% if column.notnull %}<span class="badge badge-warning">Yes</span>{% else %}No{% endif %}</td>
+                    <td>{{ column.default_value if column.default_value else '-' }}</td>
+                    <td>{% if column.pk %}<span class="badge badge-primary">PK</span>{% else %}-{% endif %}</td>
+                    <td>
+                        {% if semantics.get(column.name) %}
+                        <span class="badge badge-info">{{ semantics[column.name] }}</span>
+                        {% else %}-{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    {% if foreign_keys %}
+    <section class="schema-section">
+        <h3>Foreign Keys</h3>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Column</th>
+                    <th>References</th>
+                    <th>On Update</th>
+                    <th>On Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fk in foreign_keys %}
+                <tr>
+                    <td><strong>{{ fk.from_col }}</strong></td>
+                    <td><a href="/tables/{{ fk.table }}/schema">{{ fk.table }}</a>.{{ fk.to_col }}</td>
+                    <td>{{ fk.on_update }}</td>
+                    <td>{{ fk.on_delete }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+
+    <section class="schema-section">
+        <h3>Statistics</h3>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-value">{{ table_info.row_count }}</span>
+                <span class="stat-label">Total Rows</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ columns|length }}</span>
+                <span class="stat-label">Columns</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">{{ foreign_keys|length }}</span>
+                <span class="stat-label">Foreign Keys</span>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
