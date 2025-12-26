@@ -1,0 +1,65 @@
+<!-- Views Sidebar - Only rendered when views exist -->
+<aside class="views-sidebar" id="views-sidebar">
+    <div class="sidebar-header">
+        <h3>Views</h3>
+        <button class="sidebar-toggle" onclick="toggleViewsSidebar()" title="Collapse sidebar">
+            <span class="toggle-icon">&raquo;</span>
+        </button>
+    </div>
+    <nav class="sidebar-nav">
+        <ul class="views-list">
+            {% for view in sidebar_views %}
+            <li class="view-item">
+                <a href="#"
+                   class="view-link"
+                   hx-get="/views/{{ view.id }}/content"
+                   hx-target="#main-content"
+                   hx-swap="innerHTML"
+                   hx-push-url="/views/{{ view.id }}">
+                    <span class="view-name">{{ view.display_name }}</span>
+                    {% if view.is_story_view %}
+                    <span class="story-badge" title="Story view">&#9733;</span>
+                    {% endif %}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </nav>
+</aside>
+
+<!-- Collapsed sidebar toggle button -->
+<button class="sidebar-expand-btn" id="sidebar-expand-btn" onclick="toggleViewsSidebar()" title="Show Views" style="display: none;">
+    <span>Views</span>
+    <span class="toggle-icon">&laquo;</span>
+</button>
+
+<script>
+function toggleViewsSidebar() {
+    const sidebar = document.getElementById('views-sidebar');
+    const expandBtn = document.getElementById('sidebar-expand-btn');
+
+    if (sidebar.classList.contains('collapsed')) {
+        sidebar.classList.remove('collapsed');
+        expandBtn.style.display = 'none';
+    } else {
+        sidebar.classList.add('collapsed');
+        expandBtn.style.display = 'flex';
+    }
+
+    // Store preference
+    localStorage.setItem('viewsSidebarCollapsed', sidebar.classList.contains('collapsed'));
+}
+
+// Restore sidebar state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const isCollapsed = localStorage.getItem('viewsSidebarCollapsed') === 'true';
+    if (isCollapsed) {
+        const sidebar = document.getElementById('views-sidebar');
+        const expandBtn = document.getElementById('sidebar-expand-btn');
+        if (sidebar && expandBtn) {
+            sidebar.classList.add('collapsed');
+            expandBtn.style.display = 'flex';
+        }
+    }
+});
+</script>

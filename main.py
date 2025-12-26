@@ -29,6 +29,7 @@ from app.routes.auth import router as auth_router
 from app.routes.tables import router as tables_router
 from app.routes.dashboards import router as dashboards_router
 from app.routes.admin import router as admin_router
+from app.routes.views import router as views_router
 
 
 @asynccontextmanager
@@ -127,6 +128,7 @@ app.include_router(auth_router)
 app.include_router(tables_router)
 app.include_router(dashboards_router)
 app.include_router(admin_router)
+app.include_router(views_router)
 
 
 @app.get("/", response_class=HTMLResponse)

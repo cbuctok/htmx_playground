@@ -1,0 +1,98 @@
+<!-- View Content Partial -->
+<div class="view-content">
+    {% if error %}
+    <div class="alert alert-error">
+        <strong>Error executing view:</strong> {{ error }}
+    </div>
+    {% elif rows %}
+    <div class="view-meta">
+        <span class="badge">{{ rows|length }} row{% if rows|length != 1 %}s{% endif %}</span>
+        {% if view.source_table %}
+        <span class="badge badge-secondary">Source: {{ view.source_table }}</span>
+        {% endif %}
+    </div>
+
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {% for col in columns %}
+                    <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    {% for col in columns %}
+                    <td>
+                        {% if row[col] is none %}
+                        <span class="null-value">NULL</span>
+                        {% else %}
+                        {{ row[col] }}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No data returned by this view.</p>
+    </div>
+    {% endif %}
+
+    {% if view.sql %}
+    <details class="view-sql-details">
+        <summary>View SQL</summary>
+        <pre class="view-sql-code"><code>{{ view.sql }}</code></pre>
+    </details>
+    {% endif %}
+</div>
+
+<style>
+.view-content {
+    margin-top: 1rem;
+}
+
+.view-meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.view-sql-details {
+    margin-top: 1.5rem;
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.view-sql-details summary {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-muted);
+    user-select: none;
+}
+
+.view-sql-details summary:hover {
+    background-color: var(--card-bg);
+}
+
+.view-sql-code {
+    padding: 1rem;
+    margin: 0;
+    background-color: var(--card-bg);
+    overflow-x: auto;
+    font-size: 0.875rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.view-sql-code code {
+    font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+</style>

@@ -95,9 +95,26 @@ def init_system_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 sql TEXT NOT NULL,
-                source_table TEXT
+                source_table TEXT,
+                display_name TEXT,
+                order_index INTEGER DEFAULT 0,
+                is_story_view INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        # Migration: add new columns to views table if they don't exist
+        cursor.execute("PRAGMA table_info(views)")
+        existing_columns = {row[1] for row in cursor.fetchall()}
+
+        if 'display_name' not in existing_columns:
+            cursor.execute("ALTER TABLE views ADD COLUMN display_name TEXT")
+        if 'order_index' not in existing_columns:
+            cursor.execute("ALTER TABLE views ADD COLUMN order_index INTEGER DEFAULT 0")
+        if 'is_story_view' not in existing_columns:
+            cursor.execute("ALTER TABLE views ADD COLUMN is_story_view INTEGER DEFAULT 0")
+        if 'created_at' not in existing_columns:
+            cursor.execute("ALTER TABLE views ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP")
 
         # Column semantics table
         cursor.execute('''
