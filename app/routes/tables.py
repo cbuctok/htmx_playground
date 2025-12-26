@@ -12,6 +12,7 @@ from app.crud import (
 )
 from app.branding import get_ui_preferences
 from app.auth import User
+from app.dashboards import get_views_for_sidebar
 
 router = APIRouter(prefix="/tables")
 templates = Jinja2Templates(directory="templates")
@@ -36,9 +37,12 @@ async def list_tables(request: Request):
             'column_count': len(info.columns),
         })
 
+    sidebar_views = get_views_for_sidebar()
+
     return templates.TemplateResponse("tables/list.html", {
         "request": request,
         "tables": table_info,
+        "sidebar_views": sidebar_views,
     })
 
 
@@ -68,6 +72,8 @@ async def view_table(
     total_pages = (total_count + prefs.page_size - 1) // prefs.page_size
     pk_column = get_pk_column(table_name)
 
+    sidebar_views = get_views_for_sidebar()
+
     context = {
         "request": request,
         "table_name": table_name,
@@ -82,6 +88,7 @@ async def view_table(
         "sort": sort,
         "order": order,
         "search": search or "",
+        "sidebar_views": sidebar_views,
     }
 
     # Return partial for HTMX requests
@@ -217,6 +224,7 @@ async def view_table_schema(request: Request, table_name: str):
     """View table schema details."""
     table_info = introspect_table(table_name)
     semantics = get_table_semantics(table_name)
+    sidebar_views = get_views_for_sidebar()
 
     return templates.TemplateResponse("tables/schema.html", {
         "request": request,
@@ -225,4 +233,5 @@ async def view_table_schema(request: Request, table_name: str):
         "columns": table_info.columns,
         "foreign_keys": table_info.foreign_keys,
         "semantics": semantics,
+        "sidebar_views": sidebar_views,
     })

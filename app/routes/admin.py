@@ -37,6 +37,7 @@ async def admin_dashboard(request: Request):
         "request": request,
         "current_db": db.target_db_name,
         "available_dbs": get_available_databases(),
+        "hide_sidebar": True,
     })
 
 
@@ -53,6 +54,7 @@ async def list_users(request: Request):
     return templates.TemplateResponse("admin/users.html", {
         "request": request,
         "users": users,
+        "hide_sidebar": True,
     })
 
 
@@ -66,6 +68,7 @@ async def new_user_form(request: Request):
         "request": request,
         "mode": "create",
         "user": None,
+        "hide_sidebar": True,
     })
 
 
@@ -97,6 +100,7 @@ async def create_new_user(
             "mode": "create",
             "user": {"username": username, "role": role},
             "error": str(e),
+            "hide_sidebar": True,
         }, status_code=400)
 
 
@@ -113,12 +117,14 @@ async def edit_user_form(request: Request, user_id: int):
         return templates.TemplateResponse("errors/404.html", {
             "request": request,
             "message": f"User {user_id} not found",
+            "hide_sidebar": True,
         }, status_code=404)
 
     return templates.TemplateResponse("admin/user_form.html", {
         "request": request,
         "mode": "edit",
         "user": user,
+        "hide_sidebar": True,
     })
 
 
@@ -174,6 +180,7 @@ async def branding_form(request: Request):
         "request": request,
         "config": config,
         "prefs": prefs,
+        "hide_sidebar": True,
     })
 
 
