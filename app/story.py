@@ -6,13 +6,17 @@ from "a pile of tables" into a guided data story by:
 2. Identifying root tables (heavily referenced) and leaf tables (depend on others)
 3. Generating an ordered sequence of story steps
 4. Providing guided data entry flow for users
+5. Demo/Play mode for showcasing to customers
 """
 import json
+import random
+import string
 from dataclasses import dataclass, asdict
-from typing import Optional
+from datetime import datetime, timedelta
+from typing import Optional, Any
 
 from app.database import get_db_manager
-from app.introspection import get_all_tables, get_cached_metadata
+from app.introspection import get_all_tables, get_cached_metadata, introspect_table
 
 
 @dataclass
@@ -526,3 +530,331 @@ def reset_story():
     """
     cache_dependency_graph()
     regenerate_story_steps()
+
+
+# =============================================================================
+# Demo/Play Mode - Sample Data Generation
+# =============================================================================
+
+# Sample data pools for generating realistic demo data
+SAMPLE_DATA = {
+    'first_names': ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry', 'Iris', 'Jack',
+                    'Kate', 'Leo', 'Mia', 'Noah', 'Olivia', 'Peter', 'Quinn', 'Rose', 'Sam', 'Tina'],
+    'last_names': ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Martinez', 'Wilson'],
+    'companies': ['Acme Corp', 'TechVenture', 'GlobalSoft', 'DataFlow', 'CloudNine', 'InnovateTech', 'Synergy Inc'],
+    'cities': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Seattle', 'Boston', 'Denver'],
+    'countries': ['USA', 'Canada', 'UK', 'Germany', 'France', 'Japan', 'Australia'],
+    'categories': ['Electronics', 'Books', 'Clothing', 'Home & Garden', 'Sports', 'Toys', 'Food', 'Health'],
+    'products': ['Widget', 'Gadget', 'Device', 'Tool', 'Kit', 'Set', 'Pack', 'Bundle'],
+    'adjectives': ['Premium', 'Standard', 'Basic', 'Pro', 'Ultra', 'Super', 'Mini', 'Mega', 'Classic', 'Modern'],
+    'statuses': ['active', 'pending', 'completed', 'cancelled', 'draft', 'published', 'archived'],
+    'colors': ['Red', 'Blue', 'Green', 'Yellow', 'Black', 'White', 'Silver', 'Gold'],
+    'lorem': ['Lorem ipsum dolor sit amet', 'Consectetur adipiscing elit', 'Sed do eiusmod tempor',
+              'Incididunt ut labore et dolore', 'Magna aliqua ut enim', 'Ad minim veniam quis nostrud'],
+}
+
+
+def _generate_sample_value(column_name: str, column_type: str, table_name: str) -> Any:
+    """
+    Generate a sample value based on column name and type.
+
+    Uses heuristics to generate realistic-looking data.
+    """
+    col_lower = column_name.lower()
+    col_type_upper = column_type.upper()
+
+    # Handle specific column name patterns
+    if col_lower in ('id', 'pk') or col_lower.endswith('_id'):
+        return None  # Let autoincrement handle it or use FK lookup
+
+    # Name fields
+    if 'first' in col_lower and 'name' in col_lower:
+        return random.choice(SAMPLE_DATA['first_names'])
+    if 'last' in col_lower and 'name' in col_lower:
+        return random.choice(SAMPLE_DATA['last_names'])
+    if col_lower in ('name', 'full_name', 'fullname'):
+        return f"{random.choice(SAMPLE_DATA['first_names'])} {random.choice(SAMPLE_DATA['last_names'])}"
+    if col_lower in ('username', 'user_name', 'login'):
+        return f"{random.choice(SAMPLE_DATA['first_names']).lower()}{random.randint(1, 999)}"
+
+    # Email
+    if 'email' in col_lower:
+        name = random.choice(SAMPLE_DATA['first_names']).lower()
+        domain = random.choice(['example.com', 'demo.com', 'test.org', 'sample.net'])
+        return f"{name}{random.randint(1, 99)}@{domain}"
+
+    # Phone
+    if 'phone' in col_lower or 'tel' in col_lower:
+        return f"+1-555-{random.randint(100, 999)}-{random.randint(1000, 9999)}"
+
+    # Address fields
+    if 'city' in col_lower:
+        return random.choice(SAMPLE_DATA['cities'])
+    if 'country' in col_lower:
+        return random.choice(SAMPLE_DATA['countries'])
+    if 'address' in col_lower or 'street' in col_lower:
+        return f"{random.randint(100, 9999)} {random.choice(SAMPLE_DATA['last_names'])} St"
+    if 'zip' in col_lower or 'postal' in col_lower:
+        return f"{random.randint(10000, 99999)}"
+
+    # Company/Organization
+    if 'company' in col_lower or 'organization' in col_lower or 'org' in col_lower:
+        return random.choice(SAMPLE_DATA['companies'])
+
+    # Product/Item fields
+    if col_lower in ('title', 'product_name', 'item_name') or (table_name and 'product' in table_name.lower()):
+        adj = random.choice(SAMPLE_DATA['adjectives'])
+        prod = random.choice(SAMPLE_DATA['products'])
+        color = random.choice(SAMPLE_DATA['colors'])
+        return f"{adj} {color} {prod}"
+
+    # Category
+    if 'category' in col_lower or 'type' in col_lower:
+        return random.choice(SAMPLE_DATA['categories'])
+
+    # Description/Content
+    if 'description' in col_lower or 'content' in col_lower or 'body' in col_lower:
+        return '. '.join(random.sample(SAMPLE_DATA['lorem'], min(3, len(SAMPLE_DATA['lorem']))))
+    if 'notes' in col_lower or 'comment' in col_lower:
+        return random.choice(SAMPLE_DATA['lorem'])
+
+    # Status
+    if 'status' in col_lower or 'state' in col_lower:
+        return random.choice(SAMPLE_DATA['statuses'])
+
+    # Boolean fields
+    if col_lower.startswith('is_') or col_lower.startswith('has_') or 'active' in col_lower or 'enabled' in col_lower:
+        return random.choice([0, 1])
+    if 'BOOL' in col_type_upper:
+        return random.choice([0, 1])
+
+    # Price/Amount fields
+    if 'price' in col_lower or 'amount' in col_lower or 'cost' in col_lower or 'total' in col_lower:
+        return round(random.uniform(9.99, 999.99), 2)
+    if 'quantity' in col_lower or 'qty' in col_lower or 'count' in col_lower:
+        return random.randint(1, 100)
+
+    # Date/Time fields
+    if 'date' in col_lower or 'time' in col_lower or 'created' in col_lower or 'updated' in col_lower:
+        if 'DATETIME' in col_type_upper or 'TIMESTAMP' in col_type_upper or 'time' in col_lower:
+            days_ago = random.randint(0, 365)
+            dt = datetime.now() - timedelta(days=days_ago, hours=random.randint(0, 23))
+            return dt.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            days_ago = random.randint(0, 365)
+            dt = datetime.now() - timedelta(days=days_ago)
+            return dt.strftime('%Y-%m-%d')
+
+    # Numeric types
+    if 'INT' in col_type_upper:
+        return random.randint(1, 1000)
+    if 'REAL' in col_type_upper or 'FLOAT' in col_type_upper or 'DOUBLE' in col_type_upper:
+        return round(random.uniform(1.0, 1000.0), 2)
+
+    # Default: generate a text value
+    return f"{table_name}_{column_name}_{random.randint(1, 1000)}"
+
+
+def _get_random_fk_value(table_name: str, column_name: str) -> Optional[int]:
+    """
+    Get a random existing ID from a referenced table for FK columns.
+    """
+    db = get_db_manager()
+
+    # Get FK info for this column
+    table_info = introspect_table(table_name)
+    fk_info = None
+    for fk in table_info.foreign_keys:
+        if fk.from_col == column_name:
+            fk_info = fk
+            break
+
+    if not fk_info:
+        return None
+
+    # Get a random ID from the referenced table
+    try:
+        with db.get_target_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(f'SELECT "{fk_info.to_col}" FROM "{fk_info.table}" ORDER BY RANDOM() LIMIT 1')
+            row = cursor.fetchone()
+            if row:
+                return row[0]
+    except Exception:
+        pass
+
+    return None
+
+
+def generate_demo_row(table_name: str) -> dict:
+    """
+    Generate a single demo row for a table.
+
+    Returns a dict of column -> value mappings.
+    """
+    table_info = introspect_table(table_name)
+    row_data = {}
+
+    # Build FK column lookup
+    fk_columns = {fk.from_col: fk for fk in table_info.foreign_keys}
+
+    for column in table_info.columns:
+        # Skip primary key (autoincrement)
+        if column.pk:
+            continue
+
+        # Handle foreign key columns
+        if column.name in fk_columns:
+            fk_value = _get_random_fk_value(table_name, column.name)
+            if fk_value is not None:
+                row_data[column.name] = fk_value
+            continue
+
+        # Generate sample value
+        value = _generate_sample_value(column.name, column.type, table_name)
+        if value is not None:
+            row_data[column.name] = value
+
+    return row_data
+
+
+def insert_demo_row(table_name: str, row_data: Optional[dict] = None) -> Optional[int]:
+    """
+    Insert a demo row into a table.
+
+    Args:
+        table_name: Name of the table
+        row_data: Optional pre-generated row data. If None, generates new data.
+
+    Returns:
+        The ID of the inserted row, or None if failed.
+    """
+    if row_data is None:
+        row_data = generate_demo_row(table_name)
+
+    if not row_data:
+        return None
+
+    db = get_db_manager()
+
+    try:
+        with db.get_target_connection() as conn:
+            cursor = conn.cursor()
+
+            columns = list(row_data.keys())
+            values = list(row_data.values())
+            placeholders = ', '.join(['?' for _ in values])
+            column_names = ', '.join([f'"{c}"' for c in columns])
+
+            cursor.execute(
+                f'INSERT INTO "{table_name}" ({column_names}) VALUES ({placeholders})',
+                values
+            )
+            conn.commit()
+            return cursor.lastrowid
+    except Exception as e:
+        print(f"Error inserting demo row into {table_name}: {e}")
+        return None
+
+
+def play_story_step(step: StoryStep, num_records: int = 1) -> dict:
+    """
+    Execute a story step by inserting demo records.
+
+    Args:
+        step: The story step to play
+        num_records: Number of records to insert
+
+    Returns:
+        Dict with 'success', 'inserted_count', 'inserted_ids', 'error' (if any)
+    """
+    if step.source_type != 'table':
+        return {'success': False, 'inserted_count': 0, 'inserted_ids': [], 'error': 'Only table steps can be played'}
+
+    inserted_ids = []
+    errors = []
+
+    for i in range(num_records):
+        row_data = generate_demo_row(step.source_name)
+        row_id = insert_demo_row(step.source_name, row_data)
+
+        if row_id is not None:
+            inserted_ids.append(row_id)
+        else:
+            errors.append(f"Failed to insert record {i + 1}")
+
+    return {
+        'success': len(inserted_ids) > 0,
+        'inserted_count': len(inserted_ids),
+        'inserted_ids': inserted_ids,
+        'errors': errors if errors else None,
+        'step_id': step.id,
+        'table_name': step.source_name,
+    }
+
+
+def play_all_story_steps(records_per_step: int = 1) -> list[dict]:
+    """
+    Play through all enabled story steps, inserting demo data.
+
+    Args:
+        records_per_step: Number of records to insert per step
+
+    Returns:
+        List of results for each step
+    """
+    steps = get_story_steps(include_disabled=False)
+    results = []
+
+    for step in steps:
+        result = play_story_step(step, records_per_step)
+        results.append(result)
+
+    return results
+
+
+def get_demo_preview(table_name: str, num_samples: int = 3) -> list[dict]:
+    """
+    Generate preview data for a table without inserting.
+
+    Useful for showing what demo data would look like.
+    """
+    return [generate_demo_row(table_name) for _ in range(num_samples)]
+
+
+def clear_demo_data(table_name: str) -> int:
+    """
+    Clear all data from a table (for resetting demos).
+
+    Returns the number of rows deleted.
+    """
+    db = get_db_manager()
+
+    try:
+        with db.get_target_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(f'SELECT COUNT(*) FROM "{table_name}"')
+            count = cursor.fetchone()[0]
+
+            cursor.execute(f'DELETE FROM "{table_name}"')
+            conn.commit()
+            return count
+    except Exception:
+        return 0
+
+
+def clear_all_demo_data() -> dict:
+    """
+    Clear all data from all tables in reverse dependency order.
+
+    Returns dict with table names and deleted counts.
+    """
+    # Get tables in reverse order (leaves first, then roots)
+    ordered_tables = list(reversed(topological_sort_tables()))
+    results = {}
+
+    for table_name in ordered_tables:
+        count = clear_demo_data(table_name)
+        results[table_name] = count
+
+    return results
