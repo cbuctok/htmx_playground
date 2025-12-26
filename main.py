@@ -22,6 +22,7 @@ from app.discovery import load_target_database, DatabaseDiscoveryError
 from app.introspection import cache_table_metadata
 from app.semantics import cache_column_semantics
 from app.dashboards import reset_dashboards
+from app.story import cache_dependency_graph, initialize_story_steps
 from app.auth import validate_session
 from app.branding import get_app_config, get_ui_preferences, get_css_variables
 
@@ -29,6 +30,7 @@ from app.routes.auth import router as auth_router
 from app.routes.tables import router as tables_router
 from app.routes.dashboards import router as dashboards_router
 from app.routes.admin import router as admin_router
+from app.routes.story import router as story_router
 
 
 @asynccontextmanager
@@ -67,6 +69,11 @@ async def lifespan(app: FastAPI):
     # Create default dashboard if none exist
     reset_dashboards()
     print("[OK] Default dashboard created")
+
+    # Initialize Story Mode (dependency graph and steps)
+    cache_dependency_graph()
+    initialize_story_steps()
+    print("[OK] Story Mode initialized")
 
     print("=" * 60)
     print("Default credentials: admin/password, user1/password, user2/password")
@@ -127,6 +134,7 @@ app.include_router(auth_router)
 app.include_router(tables_router)
 app.include_router(dashboards_router)
 app.include_router(admin_router)
+app.include_router(story_router)
 
 
 @app.get("/", response_class=HTMLResponse)

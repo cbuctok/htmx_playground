@@ -137,6 +137,30 @@ def init_system_db():
             )
         ''')
 
+        # Table dependencies (for Story Mode)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS table_dependencies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                from_table TEXT NOT NULL,
+                to_table TEXT NOT NULL,
+                UNIQUE(from_table, to_table)
+            )
+        ''')
+
+        # Story steps (for Story Mode)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS story_steps (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_type TEXT NOT NULL DEFAULT 'table',
+                source_name TEXT NOT NULL,
+                order_index INTEGER NOT NULL DEFAULT 0,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                min_records_required INTEGER NOT NULL DEFAULT 1,
+                enabled INTEGER NOT NULL DEFAULT 1
+            )
+        ''')
+
         conn.commit()
 
         # Seed default users if not exist
@@ -163,10 +187,19 @@ def init_system_db():
                 ('secondary_color', '#64748b'),
                 ('background_color', '#f8fafc'),
                 ('accent_color', '#10b981'),
+                ('story_mode_enabled', 'false'),
             ]
             cursor.executemany(
                 "INSERT INTO app_config (key, value) VALUES (?, ?)",
                 default_config
+            )
+            conn.commit()
+
+        # Ensure story_mode_enabled exists (migration for existing databases)
+        cursor.execute("SELECT value FROM app_config WHERE key = 'story_mode_enabled'")
+        if not cursor.fetchone():
+            cursor.execute(
+                "INSERT INTO app_config (key, value) VALUES ('story_mode_enabled', 'false')"
             )
             conn.commit()
 
