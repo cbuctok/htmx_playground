@@ -200,10 +200,10 @@ def cache_dependency_graph():
         # Clear existing dependencies
         cursor.execute("DELETE FROM table_dependencies")
 
-        # Insert dependencies
+        # Insert dependencies (use INSERT OR IGNORE to handle duplicate FK relationships)
         for from_table, to_table in graph['edges']:
             cursor.execute(
-                "INSERT INTO table_dependencies (from_table, to_table) VALUES (?, ?)",
+                "INSERT OR IGNORE INTO table_dependencies (from_table, to_table) VALUES (?, ?)",
                 (from_table, to_table)
             )
 
