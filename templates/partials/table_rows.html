@@ -29,7 +29,7 @@
                     {% set value = row[column.name] %}
                     {% if value is none %}
                     <span class="null-value">NULL</span>
-                    {% elif value|length > 100 %}
+                    {% elif value is string and value|length > 100 %}
                     {{ value[:100] }}...
                     {% else %}
                     {{ value }}
