@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}{{ view.display_name or view.name }} - {{ config.app_name if config else 'SQLite Admin' }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h2>{{ view.display_name or view.name }}</h2>
+        {% if view.is_story_view %}
+        <span class="badge badge-warning">Story View</span>
+        {% endif %}
+    </div>
+    <div class="page-header-right">
+        <a href="/dashboards" class="btn btn-secondary">Back to Dashboards</a>
+    </div>
+</div>
+
+{% include "partials/view_content.html" %}
+{% endblock %}

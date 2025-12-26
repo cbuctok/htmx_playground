@@ -40,10 +40,16 @@
         </div>
         {% endif %}
 
-        <!-- Main Content -->
-        <main class="app-main">
-            {% block content %}{% endblock %}
-        </main>
+        <!-- Main Content Area with Optional Views Sidebar -->
+        <div class="app-content-wrapper{% if sidebar_views and not hide_sidebar %} has-sidebar{% endif %}">
+            <main class="app-main" id="main-content">
+                {% block content %}{% endblock %}
+            </main>
+
+            {% if sidebar_views and not hide_sidebar %}
+            {% include "partials/views_sidebar.html" %}
+            {% endif %}
+        </div>
 
         <!-- Footer -->
         <footer class="app-footer">

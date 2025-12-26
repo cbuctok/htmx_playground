@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 from app.dashboards import (
     get_all_dashboards, get_dashboard, create_dashboard,
     update_dashboard, delete_dashboard, get_default_dashboard_config,
-    get_saved_views, create_view, delete_view,
+    get_saved_views, create_view, delete_view, get_views_for_sidebar,
 )
 from app.introspection import get_all_tables, introspect_table
 from app.database import get_db_manager
@@ -22,11 +22,13 @@ async def list_dashboards(request: Request):
     """List all dashboards."""
     dashboards = get_all_dashboards()
     views = get_saved_views()
+    sidebar_views = get_views_for_sidebar()
 
     return templates.TemplateResponse("dashboards/list.html", {
         "request": request,
         "dashboards": dashboards,
         "views": views,
+        "sidebar_views": sidebar_views,
     })
 
 
@@ -46,6 +48,7 @@ async def default_dashboard(request: Request):
         })
 
     db = get_db_manager()
+    sidebar_views = get_views_for_sidebar()
 
     return templates.TemplateResponse("dashboards/default.html", {
         "request": request,
@@ -53,6 +56,7 @@ async def default_dashboard(request: Request):
         "db_name": db.target_db_name,
         "multiple_dbs": db.multiple_dbs_detected,
         "available_dbs": db.available_dbs,
+        "sidebar_views": sidebar_views,
     })
 
 
@@ -133,10 +137,13 @@ async def view_dashboard(request: Request, dashboard_id: int):
         else:
             widgets_data.append(widget)
 
+    sidebar_views = get_views_for_sidebar()
+
     return templates.TemplateResponse("dashboards/view.html", {
         "request": request,
         "dashboard": dashboard,
         "widgets": widgets_data,
+        "sidebar_views": sidebar_views,
     })
 
 

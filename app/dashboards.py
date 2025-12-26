@@ -143,24 +143,74 @@ def reset_dashboards():
 
 
 def get_saved_views() -> list[dict]:
-    """Get all saved views."""
+    """Get all saved views ordered by order_index, then created_at."""
     db = get_db_manager()
 
     with db.get_system_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, sql, source_table FROM views ORDER BY name")
+        cursor.execute("""
+            SELECT id, name, sql, source_table, display_name, order_index,
+                   is_story_view, created_at
+            FROM views
+            ORDER BY COALESCE(order_index, 999999), created_at, name
+        """)
         return [dict(row) for row in cursor.fetchall()]
 
 
-def create_view(name: str, sql: str, source_table: Optional[str] = None) -> int:
+def get_view(view_id: int) -> dict | None:
+    """Get a specific view by ID."""
+    db = get_db_manager()
+
+    with db.get_system_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, sql, source_table, display_name, order_index,
+                   is_story_view, created_at
+            FROM views
+            WHERE id = ?
+        """, (view_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def get_views_for_sidebar() -> list[dict]:
+    """Get views for sidebar display. Returns empty list if no views exist."""
+    views = get_saved_views()
+    # Return views with display_name falling back to name
+    for view in views:
+        if not view.get('display_name'):
+            view['display_name'] = view['name']
+    return views
+
+
+def has_views() -> bool:
+    """Check if any views exist."""
+    db = get_db_manager()
+
+    with db.get_system_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM views")
+        count = cursor.fetchone()[0]
+        return count > 0
+
+
+def create_view(
+    name: str,
+    sql: str,
+    source_table: Optional[str] = None,
+    display_name: Optional[str] = None,
+    order_index: Optional[int] = None,
+    is_story_view: bool = False
+) -> int:
     """Create a new saved view."""
     db = get_db_manager()
 
     with db.get_system_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO views (name, sql, source_table) VALUES (?, ?, ?)",
-            (name, sql, source_table)
+            """INSERT INTO views (name, sql, source_table, display_name, order_index, is_story_view)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (name, sql, source_table, display_name or name, order_index, 1 if is_story_view else 0)
         )
         conn.commit()
         return cursor.lastrowid
