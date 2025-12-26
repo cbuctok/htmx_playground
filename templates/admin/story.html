@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Story Mode - Admin - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Story Mode Management</h2>
+    <a href="/admin" class="btn btn-secondary">Back to Admin</a>
+</div>
+
+<div class="admin-grid">
+    <!-- Story Mode Toggle -->
+    <section class="admin-section">
+        <h3>Story Mode Status</h3>
+        <div id="story-toggle-messages"></div>
+        <div class="admin-actions">
+            <form
+                method="post"
+                action="/story/admin/toggle"
+                hx-post="/story/admin/toggle"
+                style="display: inline;"
+            >
+                {% if story_enabled %}
+                <input type="hidden" name="enabled" value="false">
+                <button type="submit" class="btn btn-warning">Disable Story Mode</button>
+                <span class="badge badge-primary" style="margin-left: 0.5rem;">Currently Enabled</span>
+                {% else %}
+                <input type="hidden" name="enabled" value="true">
+                <button type="submit" class="btn btn-primary">Enable Story Mode</button>
+                <span class="badge" style="margin-left: 0.5rem;">Currently Disabled</span>
+                {% endif %}
+            </form>
+        </div>
+        <p class="field-hint">
+            When enabled, users will see a guided data entry flow on their dashboard.
+            Regular CRUD access still exists outside Story Mode.
+        </p>
+    </section>
+
+    <!-- Story Steps Management -->
+    <section class="admin-section">
+        <h3>Story Steps</h3>
+        <div id="story-messages"></div>
+
+        <div class="admin-actions" style="margin-bottom: 1.5rem;">
+            <form
+                method="post"
+                action="/story/admin/regenerate"
+                hx-post="/story/admin/regenerate"
+                hx-confirm="This will regenerate all story steps based on the current schema. Custom titles and descriptions will be lost. Continue?"
+                style="display: inline;"
+            >
+                <button type="submit" class="btn btn-warning">Regenerate from Schema</button>
+            </form>
+            <span class="action-desc">Rebuild story steps based on current foreign key relationships</span>
+        </div>
+
+        {% if steps %}
+        <form
+            id="reorder-form"
+            method="post"
+            action="/story/admin/reorder"
+            hx-post="/story/admin/reorder"
+            hx-target="#story-messages"
+            hx-swap="innerHTML"
+        >
+            <div class="story-steps-list" id="sortable-steps">
+                {% for item in steps %}
+                <div class="story-step-item {% if not item.step.enabled %}step-disabled{% endif %}" data-step-id="{{ item.step.id }}">
+                    <input type="hidden" name="step_ids[]" value="{{ item.step.id }}">
+                    <div class="step-drag-handle" title="Drag to reorder">
+                        <span class="drag-icon"></span>
+                    </div>
+                    <div class="step-order">{{ item.step.order_index + 1 }}</div>
+                    <div class="step-info">
+                        <div class="step-header">
+                            <strong>{{ item.step.title }}</strong>
+                            <span class="badge {% if item.step.enabled %}badge-primary{% else %}badge-secondary{% endif %}">
+                                {{ 'Enabled' if item.step.enabled else 'Disabled' }}
+                            </span>
+                            <span class="badge badge-info">{{ item.step.source_type }}: {{ item.step.source_name }}</span>
+                        </div>
+                        <p class="step-description">{{ item.step.description }}</p>
+                        <div class="step-meta">
+                            <span>Min records: {{ item.step.min_records_required }}</span>
+                            <span>|</span>
+                            <span>Current: {{ item.progress.current_count }}</span>
+                            <span>|</span>
+                            {% if item.progress.is_complete %}
+                            <span class="text-success">Complete</span>
+                            {% else %}
+                            <span class="text-warning">{{ item.progress.percentage }}% complete</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="step-actions">
+                        <a href="/story/admin/step/{{ item.step.id }}/edit" class="btn btn-sm btn-secondary">Edit</a>
+                        <a href="/tables/{{ item.step.source_name }}" class="btn btn-sm btn-link">View Table</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="form-actions" style="margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary">Save Order</button>
+            </div>
+        </form>
+        {% else %}
+        <div class="empty-state">
+            <p>No story steps defined yet.</p>
+            <p class="field-hint">Click "Regenerate from Schema" to create steps based on your database structure.</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Dependency Graph Overview -->
+    <section class="admin-section">
+        <h3>Dependency Graph</h3>
+        <p class="field-hint" style="margin-bottom: 1rem;">
+            Tables are ordered from roots (heavily referenced) to leaves (depend on others).
+        </p>
+
+        {% if graph.edges %}
+        <div class="dependency-graph">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Table</th>
+                        <th>Depends On</th>
+                        <th>Referenced By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for table in graph.nodes|sort %}
+                    <tr>
+                        <td><strong>{{ table }}</strong></td>
+                        <td>
+                            {% set deps = graph.outgoing.get(table, []) %}
+                            {% if deps %}
+                                {% for dep in deps %}
+                                <a href="/tables/{{ dep }}/schema" class="btn btn-link btn-sm">{{ dep }}</a>{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                            <span class="null-value">None (root table)</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set refs = graph.incoming.get(table, []) %}
+                            {% if refs %}
+                                {% for ref in refs %}
+                                <a href="/tables/{{ ref }}/schema" class="btn btn-link btn-sm">{{ ref }}</a>{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                            <span class="null-value">None (leaf table)</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No foreign key relationships detected.</p>
+            <p class="field-hint">Tables without foreign keys will be ordered alphabetically.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+
+<style>
+.story-steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.story-step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    padding: 1rem;
+}
+
+.story-step-item.step-disabled {
+    opacity: 0.6;
+    background-color: var(--background-color);
+}
+
+.step-drag-handle {
+    cursor: grab;
+    padding: 0.5rem;
+    color: var(--text-muted);
+}
+
+.step-drag-handle:active {
+    cursor: grabbing;
+}
+
+.drag-icon::before {
+    content: "\2630";
+    font-size: 1.25rem;
+}
+
+.step-order {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.step-disabled .step-order {
+    background-color: var(--secondary-color);
+}
+
+.step-info {
+    flex: 1;
+}
+
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+.step-description {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.step-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    gap: 0.5rem;
+}
+
+.step-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.text-success {
+    color: var(--success-color);
+}
+
+.text-warning {
+    color: var(--warning-color);
+}
+
+.dependency-graph {
+    overflow-x: auto;
+}
+</style>
+
+<script>
+// Simple drag-and-drop reordering
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('sortable-steps');
+    if (!container) return;
+
+    let draggedItem = null;
+
+    container.addEventListener('dragstart', function(e) {
+        draggedItem = e.target.closest('.story-step-item');
+        if (draggedItem) {
+            e.dataTransfer.effectAllowed = 'move';
+            draggedItem.style.opacity = '0.5';
+        }
+    });
+
+    container.addEventListener('dragend', function(e) {
+        if (draggedItem) {
+            draggedItem.style.opacity = '';
+            draggedItem = null;
+        }
+    });
+
+    container.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        const target = e.target.closest('.story-step-item');
+        if (target && target !== draggedItem) {
+            const rect = target.getBoundingClientRect();
+            const y = e.clientY - rect.top;
+            if (y < rect.height / 2) {
+                target.parentNode.insertBefore(draggedItem, target);
+            } else {
+                target.parentNode.insertBefore(draggedItem, target.nextSibling);
+            }
+        }
+    });
+
+    // Make items draggable
+    container.querySelectorAll('.story-step-item').forEach(item => {
+        item.setAttribute('draggable', 'true');
+    });
+});
+</script>
+{% endblock %}

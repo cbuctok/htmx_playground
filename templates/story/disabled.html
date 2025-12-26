@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Story Mode - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Story Mode</h2>
+</div>
+
+<div class="empty-state-container">
+    <div class="empty-state-icon">
+        <span class="book-icon"></span>
+    </div>
+    <h3>Story Mode is Currently Disabled</h3>
+    <p class="empty-state-description">
+        Story Mode provides a guided experience for entering data into your database
+        in a meaningful order based on table relationships.
+    </p>
+
+    {% if user and user.is_admin %}
+    <div class="admin-action">
+        <p>As an admin, you can enable Story Mode from the admin panel.</p>
+        <a href="/story/admin" class="btn btn-primary">Configure Story Mode</a>
+    </div>
+    {% else %}
+    <p class="hint">Contact an administrator to enable this feature.</p>
+    {% endif %}
+
+    <div class="alternative-actions">
+        <p>In the meantime, you can:</p>
+        <div class="action-links">
+            <a href="/tables" class="btn btn-secondary">Browse Tables</a>
+            <a href="/dashboards/default" class="btn btn-secondary">View Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.empty-state-container {
+    max-width: 500px;
+    margin: 3rem auto;
+    text-align: center;
+    padding: 2rem;
+}
+
+.empty-state-icon {
+    width: 80px;
+    height: 80px;
+    background-color: var(--background-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem auto;
+}
+
+.book-icon::before {
+    content: "\1F4D6";
+    font-size: 2.5rem;
+}
+
+.empty-state-container h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.5rem;
+}
+
+.empty-state-description {
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.admin-action {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.admin-action p {
+    margin: 0 0 1rem 0;
+}
+
+.hint {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-bottom: 2rem;
+}
+
+.alternative-actions {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.alternative-actions p {
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+}
+
+.action-links {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,41 @@
+<!-- Story Progress Partial (for HTMX updates) -->
+<div class="story-progress-update">
+    <div class="progress-header">
+        <h3>Your Progress</h3>
+        <span class="progress-text">{{ progress.completed_steps }} of {{ progress.total_steps }} steps complete</span>
+    </div>
+    <div class="progress-bar-container">
+        <div class="progress-bar" style="width: {{ progress.overall_percentage }}%;"></div>
+    </div>
+    {% if progress.is_complete %}
+    <div class="progress-complete">
+        <span class="success-icon"></span>
+        All steps completed! Your data story is ready.
+    </div>
+    {% endif %}
+</div>
+
+{% if current_step and not progress.is_complete %}
+<div class="current-step-highlight">
+    <div class="current-step-label">Current Step</div>
+    <div class="current-step-card">
+        <div class="step-number">{{ current_step.step.order_index + 1 }}</div>
+        <div class="step-content">
+            <h3>{{ current_step.step.title }}</h3>
+            <p>{{ current_step.step.description }}</p>
+            <div class="step-progress-info">
+                <span>{{ current_step.progress.current_count }} of {{ current_step.progress.required }} records</span>
+            </div>
+        </div>
+        <div class="step-action">
+            <a href="/tables/{{ current_step.step.source_name }}/new" class="btn btn-primary">
+                {% if current_step.progress.current_count == 0 %}
+                Create First Record
+                {% else %}
+                Add Another Record
+                {% endif %}
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}

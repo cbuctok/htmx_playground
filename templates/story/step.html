@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}{{ step.title }} - Story Mode - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <a href="/story" class="btn btn-link">&larr; Back to Story</a>
+        <h2>Step {{ step_number }} of {{ total_steps }}</h2>
+    </div>
+    <div class="page-header-right">
+        {% if prev_step %}
+        <a href="/story/step/{{ prev_step.id }}" class="btn btn-secondary">&larr; Previous</a>
+        {% endif %}
+        {% if next_step %}
+        <a href="/story/step/{{ next_step.id }}" class="btn btn-secondary">Next &rarr;</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="step-detail-container">
+    <!-- Step Header -->
+    <div class="step-detail-header">
+        <div class="step-icon {% if progress.is_complete %}complete{% endif %}">
+            {% if progress.is_complete %}
+            <span class="check-icon"></span>
+            {% else %}
+            {{ step_number }}
+            {% endif %}
+        </div>
+        <div class="step-title-section">
+            <h1>{{ step.title }}</h1>
+            <span class="source-badge">{{ step.source_type }}: {{ step.source_name }}</span>
+        </div>
+    </div>
+
+    <!-- Description -->
+    <div class="step-description-card">
+        <h3>About This Step</h3>
+        <p>{{ step.description }}</p>
+    </div>
+
+    <!-- Progress & Action -->
+    <div class="step-progress-card">
+        <div class="progress-stats">
+            <div class="progress-stat">
+                <div class="stat-value">{{ progress.current_count }}</div>
+                <div class="stat-label">Current Records</div>
+            </div>
+            <div class="progress-stat">
+                <div class="stat-value">{{ progress.required }}</div>
+                <div class="stat-label">Required</div>
+            </div>
+            <div class="progress-stat">
+                <div class="stat-value">{{ progress.percentage }}%</div>
+                <div class="stat-label">Complete</div>
+            </div>
+        </div>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar {% if progress.is_complete %}complete{% endif %}" style="width: {{ progress.percentage }}%;"></div>
+        </div>
+
+        <div class="step-cta">
+            {% if progress.is_complete %}
+            <div class="complete-message">
+                <span class="success-icon"></span>
+                This step is complete! You can still add more records if needed.
+            </div>
+            {% else %}
+            <div class="incomplete-message">
+                {% if progress.current_count == 0 %}
+                <p>You haven't created any records for this step yet.</p>
+                <p class="hint">Create at least {{ progress.required }} record(s) to complete this step.</p>
+                {% else %}
+                <p>You need {{ progress.required - progress.current_count }} more record(s) to complete this step.</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="action-buttons">
+                <a href="/tables/{{ step.source_name }}/new" class="btn btn-primary btn-lg">
+                    {% if progress.current_count == 0 %}
+                    Create First Record
+                    {% else %}
+                    Create New Record
+                    {% endif %}
+                </a>
+                <a href="/tables/{{ step.source_name }}" class="btn btn-secondary">View All Records</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dependencies Info -->
+    {% if dependencies.depends_on or dependencies.depended_by %}
+    <div class="dependencies-card">
+        <h3>Table Relationships</h3>
+
+        {% if dependencies.depends_on %}
+        <div class="dependency-section">
+            <h4>This table references:</h4>
+            <ul class="dependency-list">
+                {% for dep in dependencies.depends_on %}
+                <li>
+                    <a href="/tables/{{ dep }}">{{ dep }}</a>
+                    <span class="hint">(should have records before this step)</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if dependencies.depended_by %}
+        <div class="dependency-section">
+            <h4>Referenced by:</h4>
+            <ul class="dependency-list">
+                {% for dep in dependencies.depended_by %}
+                <li>
+                    <a href="/tables/{{ dep }}">{{ dep }}</a>
+                    <span class="hint">(will need records from this step)</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Quick Links -->
+    <div class="quick-links-card">
+        <h3>Quick Links</h3>
+        <div class="quick-links">
+            <a href="/tables/{{ step.source_name }}/schema" class="btn btn-secondary">View Schema</a>
+            <a href="/tables/{{ step.source_name }}" class="btn btn-secondary">Browse Data</a>
+            {% if next_step %}
+            <a href="/story/step/{{ next_step.id }}" class="btn btn-link">Preview Next Step &rarr;</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.step-detail-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.step-detail-header {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.step-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    font-size: 2rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.step-icon.complete {
+    background-color: var(--success-color);
+}
+
+.check-icon::before {
+    content: "\2713";
+}
+
+.step-title-section h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.75rem;
+}
+
+.source-badge {
+    font-family: monospace;
+    background-color: var(--background-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.step-description-card,
+.step-progress-card,
+.dependencies-card,
+.quick-links-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.step-description-card h3,
+.step-progress-card h3,
+.dependencies-card h3,
+.quick-links-card h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+}
+
+.step-description-card p {
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.progress-stats {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+
+.progress-stat {
+    text-align: center;
+}
+
+.progress-stat .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.progress-stat .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.progress-bar-container {
+    background-color: var(--background-color);
+    border-radius: 9999px;
+    height: 12px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, var(--warning-color), var(--primary-color));
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+}
+
+.progress-bar.complete {
+    background: var(--success-color);
+}
+
+.step-cta {
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.complete-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--success-color);
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.success-icon::before {
+    content: "\2713";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: var(--success-color);
+    color: white;
+    border-radius: 50%;
+}
+
+.incomplete-message {
+    margin-bottom: 1rem;
+}
+
+.incomplete-message p {
+    margin: 0 0 0.25rem 0;
+}
+
+.incomplete-message .hint {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+.dependency-section {
+    margin-bottom: 1rem;
+}
+
+.dependency-section:last-child {
+    margin-bottom: 0;
+}
+
+.dependency-section h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+}
+
+.dependency-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.dependency-list li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dependency-list li:last-child {
+    border-bottom: none;
+}
+
+.dependency-list a {
+    font-weight: 500;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.dependency-list a:hover {
+    text-decoration: underline;
+}
+
+.dependency-list .hint {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+}
+
+.quick-links {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .step-detail-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .progress-stats {
+        justify-content: center;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

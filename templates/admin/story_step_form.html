@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Story Step - Admin - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Edit Story Step</h2>
+    <a href="/story/admin" class="btn btn-secondary">Back to Story Management</a>
+</div>
+
+<div class="form-container">
+    <form
+        class="crud-form"
+        method="post"
+        action="/story/admin/step/{{ step.id }}/edit"
+        hx-post="/story/admin/step/{{ step.id }}/edit"
+    >
+        <div class="form-section">
+            <h3>Step Information</h3>
+
+            <div class="form-group">
+                <label>Source</label>
+                <input type="text" value="{{ step.source_type }}: {{ step.source_name }}" disabled>
+                <span class="field-hint">The source table or view cannot be changed. Regenerate steps to rebuild.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="title">Title <span class="required">*</span></label>
+                <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    value="{{ step.title }}"
+                    required
+                    placeholder="e.g., Create Your First Category"
+                >
+                <span class="field-hint">A descriptive title shown to users during the story flow.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea
+                    id="description"
+                    name="description"
+                    rows="4"
+                    placeholder="Explain why this step matters and what the user should do..."
+                >{{ step.description }}</textarea>
+                <span class="field-hint">Help users understand the purpose of this step.</span>
+            </div>
+
+            <div class="form-group">
+                <label for="min_records_required">Minimum Records Required</label>
+                <input
+                    type="number"
+                    id="min_records_required"
+                    name="min_records_required"
+                    value="{{ step.min_records_required }}"
+                    min="0"
+                    max="100"
+                >
+                <span class="field-hint">How many records must exist before this step is considered complete.</span>
+            </div>
+
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input
+                        type="checkbox"
+                        id="enabled"
+                        name="enabled"
+                        value="true"
+                        {% if step.enabled %}checked{% endif %}
+                    >
+                    Step is enabled
+                </label>
+                <span class="field-hint">Disabled steps are hidden from users but preserved for admin reference.</span>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="/story/admin" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="admin-section" style="margin-top: 1.5rem; max-width: 600px;">
+    <h3>Quick Links</h3>
+    <div class="admin-links">
+        <a href="/tables/{{ step.source_name }}" class="btn btn-secondary">View Table Data</a>
+        <a href="/tables/{{ step.source_name }}/schema" class="btn btn-secondary">View Schema</a>
+        <a href="/tables/{{ step.source_name }}/new" class="btn btn-secondary">Create Record</a>
+    </div>
+</div>
+{% endblock %}
