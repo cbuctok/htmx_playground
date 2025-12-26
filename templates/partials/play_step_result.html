@@ -1,0 +1,78 @@
+<!-- Result after playing a single step -->
+<div class="step-result-content">
+    {% if result.success %}
+    <div class="alert alert-success">
+        <span class="success-icon"></span>
+        Added {{ result.inserted_count }} record(s) to <strong>{{ step.source_name }}</strong>
+        <span class="record-ids">(ID: {{ result.inserted_ids|join(', ') }})</span>
+    </div>
+    <div class="updated-progress">
+        <div class="step-progress-bar">
+            <div class="progress-fill" style="width: {{ progress.percentage }}%;"></div>
+        </div>
+        <span class="progress-count">{{ progress.current_count }}/{{ progress.required }}</span>
+    </div>
+    {% else %}
+    <div class="alert alert-error">
+        Failed to add records: {{ result.errors|join(', ') if result.errors else 'Unknown error' }}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.step-result-content {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.step-result-content .success-icon::before {
+    content: "\2713";
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background-color: var(--success-color);
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 18px;
+    font-size: 0.75rem;
+    margin-right: 0.5rem;
+}
+
+.step-result-content .record-ids {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: 0.5rem;
+}
+
+.step-result-content .updated-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.step-result-content .step-progress-bar {
+    flex: 1;
+    background-color: var(--background-color);
+    border-radius: 9999px;
+    height: 6px;
+    overflow: hidden;
+}
+
+.step-result-content .progress-fill {
+    background-color: var(--accent-color);
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+}
+
+.step-result-content .progress-count {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+</style>

@@ -18,6 +18,12 @@ from app.story import (
     get_table_dependencies_display,
     build_dependency_graph,
     cache_dependency_graph,
+    # Demo/Play mode functions
+    play_story_step,
+    play_all_story_steps,
+    get_demo_preview,
+    clear_demo_data,
+    clear_all_demo_data,
 )
 from app.branding import get_app_config, get_ui_preferences
 from app.database import get_db_manager
@@ -272,3 +278,153 @@ async def view_dependency_graph(request: Request):
     context['graph'] = graph
 
     return templates.TemplateResponse("admin/dependency_graph.html", context)
+
+
+# =============================================================================
+# Demo/Play Mode routes
+# =============================================================================
+
+@router.get("/play", response_class=HTMLResponse)
+async def play_mode(request: Request):
+    """
+    Demo/Play Mode view.
+
+    Shows the story with play controls for auto-generating demo data.
+    """
+    context = get_template_context(request)
+
+    progress = get_story_progress()
+    steps = get_story_steps(include_disabled=False)
+
+    # Add progress and preview to each step
+    steps_with_info = []
+    for step in steps:
+        step_progress = get_step_progress(step)
+        preview = get_demo_preview(step.source_name, num_samples=1)
+        steps_with_info.append({
+            'step': step,
+            'progress': step_progress,
+            'preview': preview[0] if preview else {},
+        })
+
+    context.update({
+        'progress': progress,
+        'steps': steps_with_info,
+    })
+
+    return templates.TemplateResponse("story/play.html", context)
+
+
+@router.post("/play/step/{step_id}")
+async def play_step(
+    request: Request,
+    step_id: int,
+    num_records: int = Form(1),
+):
+    """
+    Play a single story step by inserting demo data.
+
+    Returns the result of the operation.
+    """
+    step = get_story_step(step_id)
+    if not step:
+        return HTMLResponse(
+            content='<div class="alert alert-error">Step not found</div>',
+            status_code=404
+        )
+
+    result = play_story_step(step, num_records)
+
+    if request.headers.get("HX-Request"):
+        if result['success']:
+            # Return updated step progress
+            progress = get_step_progress(step)
+            return templates.TemplateResponse("partials/play_step_result.html", {
+                "request": request,
+                "step": step,
+                "result": result,
+                "progress": progress,
+            })
+        else:
+            return HTMLResponse(
+                content=f'<div class="alert alert-error">Failed: {result.get("errors", "Unknown error")}</div>'
+            )
+
+    return RedirectResponse(url="/story/play", status_code=303)
+
+
+@router.post("/play/all")
+async def play_all_steps(
+    request: Request,
+    records_per_step: int = Form(1),
+):
+    """
+    Play all story steps sequentially.
+
+    Inserts demo data for each step in order.
+    """
+    results = play_all_story_steps(records_per_step)
+
+    if request.headers.get("HX-Request"):
+        progress = get_story_progress()
+        return templates.TemplateResponse("partials/play_all_result.html", {
+            "request": request,
+            "results": results,
+            "progress": progress,
+        })
+
+    return RedirectResponse(url="/story/play", status_code=303)
+
+
+@router.post("/play/clear/{table_name}")
+async def clear_table_data(request: Request, table_name: str):
+    """Clear all data from a specific table."""
+    if not require_admin(request):
+        return HTMLResponse(content="Unauthorized", status_code=403)
+
+    count = clear_demo_data(table_name)
+
+    if request.headers.get("HX-Request"):
+        return HTMLResponse(
+            content=f'<div class="alert alert-success">Cleared {count} rows from {table_name}</div>'
+        )
+
+    return RedirectResponse(url="/story/play", status_code=303)
+
+
+@router.post("/play/clear-all")
+async def clear_all_data(request: Request):
+    """Clear all data from all tables."""
+    if not require_admin(request):
+        return HTMLResponse(content="Unauthorized", status_code=403)
+
+    results = clear_all_demo_data()
+    total = sum(results.values())
+
+    if request.headers.get("HX-Request"):
+        return HTMLResponse(
+            content=f'<div class="alert alert-success">Cleared {total} rows from {len(results)} tables</div>',
+            headers={"HX-Redirect": "/story/play"}
+        )
+
+    return RedirectResponse(url="/story/play", status_code=303)
+
+
+@router.get("/play/preview/{table_name}", response_class=HTMLResponse)
+async def preview_demo_data(request: Request, table_name: str):
+    """
+    Preview what demo data would look like for a table.
+    """
+    context = get_template_context(request)
+
+    preview = get_demo_preview(table_name, num_samples=5)
+
+    context.update({
+        'table_name': table_name,
+        'preview': preview,
+    })
+
+    if request.headers.get("HX-Request"):
+        return templates.TemplateResponse("partials/demo_preview.html", context)
+
+    return templates.TemplateResponse("story/preview.html", context)

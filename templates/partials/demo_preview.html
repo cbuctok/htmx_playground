@@ -1,0 +1,75 @@
+<!-- Preview of demo data for a table -->
+<div class="demo-preview">
+    <h4>Sample Data Preview: {{ table_name }}</h4>
+    <p class="hint">This is what auto-generated demo data would look like.</p>
+
+    <div class="preview-samples">
+        {% for row in preview %}
+        <div class="preview-row">
+            <div class="row-number">#{{ loop.index }}</div>
+            <table class="preview-table">
+                {% for key, value in row.items() %}
+                <tr>
+                    <th>{{ key }}</th>
+                    <td>{{ value }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.demo-preview {
+    padding: 1rem;
+}
+
+.demo-preview h4 {
+    margin: 0 0 0.5rem 0;
+}
+
+.demo-preview .hint {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+.preview-samples {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.preview-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    background-color: var(--background-color);
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+}
+
+.row-number {
+    font-weight: 600;
+    color: var(--primary-color);
+    min-width: 30px;
+}
+
+.preview-table {
+    flex: 1;
+    font-size: 0.75rem;
+}
+
+.preview-table th {
+    text-align: left;
+    padding: 0.25rem 0.5rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    width: 30%;
+}
+
+.preview-table td {
+    padding: 0.25rem 0.5rem;
+}
+</style>

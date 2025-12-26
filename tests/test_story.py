@@ -21,6 +21,15 @@ from app.story import (
     initialize_story_steps,
     reset_story,
     StoryStep,
+    # Demo/Play mode functions
+    generate_demo_row,
+    insert_demo_row,
+    play_story_step,
+    play_all_story_steps,
+    get_demo_preview,
+    clear_demo_data,
+    clear_all_demo_data,
+    _generate_sample_value,
 )
 from app.database import get_db_manager, init_system_db
 from app.introspection import cache_table_metadata
@@ -476,3 +485,195 @@ class TestResetStory:
         # Title should be regenerated (not "Modified Title")
         first_step = next(s for s in new_steps if s.source_name == initial_steps[0].source_name)
         assert first_step.title != "Modified Title"
+
+
+# =============================================================================
+# Demo/Play Mode Tests
+# =============================================================================
+
+class TestGenerateSampleValue:
+    """Tests for sample value generation."""
+
+    def test_generates_email(self, temp_databases):
+        """Test email field generation."""
+        value = _generate_sample_value('email', 'TEXT', 'users')
+        assert '@' in value
+        assert '.' in value
+
+    def test_generates_phone(self, temp_databases):
+        """Test phone field generation."""
+        value = _generate_sample_value('phone', 'TEXT', 'users')
+        assert value.startswith('+')
+
+    def test_generates_name(self, temp_databases):
+        """Test name field generation."""
+        value = _generate_sample_value('name', 'TEXT', 'users')
+        assert ' ' in value  # Full name has space
+
+    def test_generates_price(self, temp_databases):
+        """Test price field generation."""
+        value = _generate_sample_value('price', 'REAL', 'orders')
+        assert isinstance(value, float)
+        assert value > 0
+
+    def test_generates_integer(self, temp_databases):
+        """Test integer field generation."""
+        value = _generate_sample_value('count', 'INTEGER', 'items')
+        assert isinstance(value, int)
+
+    def test_generates_status(self, temp_databases):
+        """Test status field generation."""
+        value = _generate_sample_value('status', 'TEXT', 'orders')
+        assert value in ['active', 'pending', 'completed', 'cancelled', 'draft', 'published', 'archived']
+
+
+class TestGenerateDemoRow:
+    """Tests for demo row generation."""
+
+    def test_generates_row_for_table(self, temp_databases):
+        """Test generating a demo row for a table."""
+        row = generate_demo_row('categories')
+        assert isinstance(row, dict)
+        assert 'name' in row or 'description' in row
+
+    def test_excludes_primary_key(self, temp_databases):
+        """Test that PK is not included in generated row."""
+        row = generate_demo_row('categories')
+        assert 'id' not in row
+
+    def test_handles_foreign_keys(self, temp_databases):
+        """Test that FK columns reference existing data."""
+        # First ensure parent table has data
+        insert_demo_row('categories')
+
+        # Now generate row for child table
+        row = generate_demo_row('products')
+        # category_id should be present if categories has data
+        if 'category_id' in row:
+            assert isinstance(row['category_id'], int)
+
+
+class TestInsertDemoRow:
+    """Tests for inserting demo rows."""
+
+    def test_inserts_row(self, temp_databases):
+        """Test inserting a demo row."""
+        initial_count = get_db_manager()
+        with initial_count.get_target_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM categories")
+            before = cursor.fetchone()[0]
+
+        row_id = insert_demo_row('categories')
+
+        assert row_id is not None
+        assert row_id > 0
+
+        with initial_count.get_target_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM categories")
+            after = cursor.fetchone()[0]
+
+        assert after == before + 1
+
+    def test_returns_none_on_failure(self, temp_databases):
+        """Test that None is returned if insertion fails."""
+        # Try to insert into non-existent table
+        row_id = insert_demo_row('nonexistent_table', {'col': 'value'})
+        assert row_id is None
+
+
+class TestPlayStoryStep:
+    """Tests for playing individual story steps."""
+
+    def test_plays_step(self, temp_databases):
+        """Test playing a story step."""
+        initialize_story_steps()
+        steps = get_story_steps(include_disabled=True)
+
+        # Find a root table step
+        cat_step = next(s for s in steps if s.source_name == 'categories')
+
+        result = play_story_step(cat_step, num_records=2)
+
+        assert result['success'] is True
+        assert result['inserted_count'] == 2
+        assert len(result['inserted_ids']) == 2
+
+    def test_returns_error_for_view(self, temp_databases):
+        """Test that playing a view step returns error."""
+        # Create a fake view step
+        fake_step = StoryStep(
+            id=999,
+            source_type='view',
+            source_name='fake_view',
+            order_index=0,
+            title='Fake',
+            description='',
+            min_records_required=1,
+            enabled=True
+        )
+
+        result = play_story_step(fake_step)
+
+        assert result['success'] is False
+        assert 'error' in result
+
+
+class TestPlayAllStorySteps:
+    """Tests for playing all story steps."""
+
+    def test_plays_all_steps(self, temp_databases):
+        """Test playing all story steps."""
+        initialize_story_steps()
+
+        results = play_all_story_steps(records_per_step=1)
+
+        assert len(results) > 0
+        # At least root tables should succeed
+        successful = [r for r in results if r['success']]
+        assert len(successful) > 0
+
+
+class TestDemoPreview:
+    """Tests for demo data preview."""
+
+    def test_generates_preview(self, temp_databases):
+        """Test generating preview data."""
+        preview = get_demo_preview('categories', num_samples=3)
+
+        assert len(preview) == 3
+        for row in preview:
+            assert isinstance(row, dict)
+
+
+class TestClearDemoData:
+    """Tests for clearing demo data."""
+
+    def test_clears_table_data(self, temp_databases):
+        """Test clearing data from a table."""
+        # Insert some data
+        insert_demo_row('categories')
+        insert_demo_row('categories')
+
+        count = clear_demo_data('categories')
+
+        assert count >= 2
+
+        # Verify table is empty
+        db = get_db_manager()
+        with db.get_target_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM categories")
+            assert cursor.fetchone()[0] == 0
+
+    def test_clears_all_tables(self, temp_databases):
+        """Test clearing all table data."""
+        # Insert data into multiple tables
+        insert_demo_row('categories')
+        insert_demo_row('users')
+
+        results = clear_all_demo_data()
+
+        assert 'categories' in results
+        assert 'users' in results

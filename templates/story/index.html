@@ -8,6 +8,12 @@
         <h2>Story Mode</h2>
         <span class="badge badge-primary">Guided Data Entry</span>
     </div>
+    <div class="page-header-right">
+        <a href="/story/play" class="btn btn-play">
+            <span class="play-icon"></span>
+            Demo Mode
+        </a>
+    </div>
 </div>
 
 <!-- Overall Progress -->
@@ -342,6 +348,22 @@
 
 .timeline-action {
     flex-shrink: 0;
+}
+
+.btn-play {
+    background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+    color: white;
+    font-weight: 600;
+}
+
+.btn-play:hover {
+    opacity: 0.9;
+    color: white;
+}
+
+.play-icon::before {
+    content: "\25B6";
+    margin-right: 0.5rem;
 }
 
 @media (max-width: 768px) {

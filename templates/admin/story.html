@@ -4,9 +4,33 @@
 
 {% block content %}
 <div class="page-header">
-    <h2>Story Mode Management</h2>
-    <a href="/admin" class="btn btn-secondary">Back to Admin</a>
+    <div class="page-header-left">
+        <h2>Story Mode Management</h2>
+    </div>
+    <div class="page-header-right">
+        <a href="/story/play" class="btn btn-play">
+            <span class="play-icon"></span>
+            Demo Mode
+        </a>
+        <a href="/admin" class="btn btn-secondary">Back to Admin</a>
+    </div>
 </div>
+
+<style>
+.btn-play {
+    background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+    color: white;
+    font-weight: 600;
+}
+.btn-play:hover {
+    opacity: 0.9;
+    color: white;
+}
+.play-icon::before {
+    content: "\25B6";
+    margin-right: 0.5rem;
+}
+</style>
 
 <div class="admin-grid">
     <!-- Story Mode Toggle -->
